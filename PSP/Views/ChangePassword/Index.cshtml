@@ -1,0 +1,119 @@
+﻿@{
+    ViewBag.Title = "Users";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<div class="container mt-3">
+    <h2>Change Password</h2>
+    <form method="post" class="formcontainer" novalidate="" autocomplete="off">
+        <div class="mb-3">
+            <label for="password" class="form-label">Password:</label>
+            <input type="password" class="form-control" id="password" placeholder="Enter password" name="Password" style="max-width: 400px" required="" autofocus="">
+            <div class="invalid-feedback">
+                Password is required
+            </div>
+        </div>
+        <div class="mb-3">
+            <label for="newpassword" class="form-label">New Password:</label>
+            <input type="password" class="form-control" id="newpassword" placeholder="Enter new password" name="NewPassword" style="max-width: 400px" required="" autofocus="">
+            <div class="invalid-feedback">
+                New Password is required
+            </div>
+        </div>
+        <div class="mb-3">
+            <label for="confirmpassword" class="form-label">Confirm New Password:</label>
+            <input type="password" class="form-control" id="confirmpassword" placeholder="Enter new password" name="ConfirmPassword" style="max-width: 400px" required="" autofocus="">
+            <div class="invalid-feedback">
+                Password confirmation is required
+            </div>
+        </div>
+    </form>
+    <button type="submit" class="btn btn-primary" id="btnSave">Change Password</button>
+</div>
+
+<script type="text/javascript">
+    $(document).ready(function () {
+        $("#btnSave").on('click', function (event) {
+            CheckPassword();
+
+        });
+
+        function CheckPassword() {
+            var pass = $("#password").val();
+            var UserName = "@TempData["UserName"].ToString()";
+            var newPass = $("#confirmpassword").val();
+            var confPass = $("#newpassword").val();
+            $.ajax({
+                cache: false,
+                method: "GET",
+                url: "@Url.Action("SearchUser", "Users")",
+                contentType: "application/json",
+                data: {
+                    UserName: UserName
+                },
+                success: function (data) {
+                    if (data[0].Password != pass) {
+                        swal("Error", "Incorrect password!", "error")
+                            .then((value) => {
+                                returnVal = false;
+                            })
+                    }
+                    else {
+                        if (pass != "" && newPass != "" && confPass != "") {
+                            if (newPass == confPass) {
+                                model = {
+                                    UserName: "@TempData["UserName"].ToString()",
+                                    Password: $("#newpassword").val()
+                                }
+                                $.ajax({
+                                    cache: false,
+                                    contentType: "application/json",
+                                    url: "@Url.Action("ChangePassword", "ChangePassword")",
+                                    method: "POST",
+                                    data: JSON.stringify(model),
+                                    success: function (data) {
+                                        swal("Success", data.Description, "success")
+                                            .then((value) => {
+                                                if (data.ResponseStat == 1) {
+                                                    location.reload();
+                                                }
+                                            });
+                                    },
+                                    error: function (response) {
+                                    }
+                                });
+                            }
+                            else {
+                                swal("Password did not match", "New password and confirmed password did not match", "error")
+                            }
+                        }
+
+                    }
+
+                },
+                error: function (response) {
+                }
+            });
+        }
+        //////////////////////////////////////////////
+        //login validation
+        (function () {
+            'use strict'
+
+            // Fetch all the forms we want to apply custom Bootstrap validation styles to
+            var forms = document.querySelectorAll('.formcontainer')
+
+            // Loop over them and prevent submission
+            Array.prototype.slice.call(forms)
+                .forEach(function (form) {
+                    document.getElementById("btnSave").addEventListener('click', function (event) {
+                        if (!form.checkValidity()) {
+                            event.preventDefault()
+                            event.stopPropagation()
+                        }
+
+                        form.classList.add('was-validated')
+                    }, false)
+                })
+        })()
+    });
+</script>

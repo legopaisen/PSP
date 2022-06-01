@@ -1,0 +1,302 @@
+﻿@{
+    ViewBag.Title = "Users";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<script type="text/javascript">
+    $(document).ready(function () {
+        var isEdit = true;
+        $("#UsersList").bootstrapTable('hideColumn', 'Locked');
+        $('#userModal').on('hidden.bs.modal', function () {
+            $(this).find('form')[0].reset();
+        });
+        $.ajax({
+            cache: false,
+            url: '@Url.Action("GetUsersList", "Users")',
+            method: 'GET',
+            contentType: 'application/json',
+            success: function (data) {
+                $("#UsersList").bootstrapTable('load', { data: data });
+            },
+            error: function (err) {
+                console.log(err);
+            }
+        });
+        window.actionEvents = {
+            'click .remove': function (e, value, row, index) {
+                var model = {
+                   UserName: row.UserName
+                }
+                swal({
+                    title: "Delete User?",
+                    text: "User will be deleted permanently",
+                    icon: "warning",
+                    buttons: true,
+                    dangerMode: true,
+                })
+                .then((confirm) => {
+                    if (confirm) {
+                        $.ajax({
+                            cache: false,
+                            data: JSON.stringify(model),
+                            type: "POST",
+                            contentType: "application/json",
+                            url: "@Url.Action("DeleteUser", "Users")",
+                            datatype: "json",
+                            success: function (data) {
+                                swal("Success", data.Description, "success")
+                                    .then((value) => {
+                                        if (data.ResponseStat == 2) {
+                                            window.location = "@Url.Action("Logout", "Login")";
+                                        }
+                                        else {
+                                            location.reload();
+                                        }
+                                    });
+                            },
+                            error: function (response) {
+                                console.log(response)
+                            }
+                        });
+                    }
+                });
+            },
+            'click .edit': function (e, value, row, index) {
+                isEdit = true;
+                $('#userModal').modal('show');
+                document.getElementById("modal-username").value = row.UserName;
+                document.getElementById("modal-name").value = row.Name;
+                document.getElementById("modal-username").disabled = true;
+                document.getElementById("modal-pwd").disabled = true;
+                document.getElementById("modal-locked").disabled = false;
+                document.getElementById("modal-title").textContent = "Update User";
+            }
+        }
+
+        $("#btnAddUser").on('click', function () {
+            isEdit = false;
+            document.getElementById("modal-username").value = "";
+            document.getElementById("modal-name").value = "";
+            document.getElementById("modal-username").disabled = false;
+            document.getElementById("modal-pwd").disabled = false;
+            document.getElementById("modal-locked").disabled = true;
+            document.getElementById("modal-title").textContent = "Add New User";
+
+        });
+
+        var d = new Date();
+        var dateToday = d.toISOString();
+       //Insert/Update User
+        $(".modal-footer #btnSave").on('click', function () {
+
+            var intLocked = 0;
+            if ($('#modal-locked:checked').is(':checked')) {
+                intLocked = 1;
+            }
+            var model = {
+                UserName: $("#modal-username").val(),
+                Name: $("#modal-name").val(),
+                AccLevel: $("#modal-accLvl").val(),
+                Password: $("#modal-pwd").val(),
+                ExpDate: dateToday, //date today plus 1 month
+                ErrorCtrl: '0',
+                Locked: intLocked
+            };
+            if (isEdit == false) { //insert
+                if ($("#modal-username").val() != "" && $("#modal-pwd").val() != "" && $("#modal-pwd").val().length >= 6 && $("#modal-name").val() != "") {
+                    $.ajax({
+                        cache: false,
+                        url: "@Url.Action("SearchUser", "Users")",
+                        method: "GET",
+                        contentType: "application/json",
+                        data: {
+                            UserName: $("#modal-username").val()
+                        },
+                        success: function (data) {
+                            if (data[0] != undefined) {
+                                swal("Error", "User Already Exists!", "error");
+                            }
+                            else {
+                                swal({
+                                    title: "Add New User",
+                                    text: "Create new user?",
+                                    icon: "warning",
+                                    buttons: true,
+                                    dangerMode: true,
+                                })
+                                    .then((confirm) => {
+                                        if (confirm) {
+                                            $.ajax({
+                                                cache: false,
+                                                data: JSON.stringify(model),
+                                                type: "POST",
+                                                contentType: "application/json",
+                                                url: "@Url.Action("InsertUser", "Users")",
+                                                datatype: "json",
+                                                success: function (data) {
+                                                    if (data.ResponseStat != 1 && data != null) {
+                                                        swal("Error", data.Description, "error");
+                                                    }
+                                                    else {
+                                                        swal("Success", data.Description, "success")
+                                                            .then((value) => {
+                                                                location.reload();
+                                                            });
+                                                    }
+                                                },
+                                                error: function (response) {
+                                                    console.log(response);
+                                                }
+                                            });
+                                        }
+                                    });
+                            }
+                        },
+                        error: function (response) {
+                            console.log(response)
+                        }
+                    });
+                }
+            }
+            else { //update
+                if ($("#modal-username").val() != "" && $("#modal-name").val() != "") {
+                    $.ajax({
+                        cache: false,
+                        data: JSON.stringify(model),
+                        type: "POST",
+                        contentType: "application/json",
+                        url: "@Url.Action("EditUser", "Users")",
+                        datatype: "json",
+                        success: function (data) {
+                            swal("Success", data.Description, "success")
+                                .then((value) => {
+                                    location.reload();
+                                });
+                        },
+                        error: function (response) {
+                            console.log(response)
+                        }
+                    });
+                }
+            }
+        });
+
+        $('#modal-username').keyup(function () {
+            this.value = this.value.toUpperCase();
+        });
+
+        /////////////////////////////////////////////
+        //login validation
+        (function () {
+            'use strict'
+
+            // Fetch all the forms we want to apply custom Bootstrap validation styles to
+            var forms = document.querySelectorAll('.formcontainer')
+
+            // Loop over them and prevent submission
+            Array.prototype.slice.call(forms)
+                .forEach(function (form) {
+                    document.getElementById("btnSave").addEventListener('click', function (event) {
+                        if (!form.checkValidity()) {
+                            event.preventDefault()
+                            event.stopPropagation()
+                        }
+
+                        form.classList.add('was-validated')
+                    }, false)
+                })
+        })()
+    });
+
+    function actionFormatter(value, row, index) {
+     return [
+        '<a class="edit" href="#" title="Edit">',
+        '<i class="fa fa-edit"></i>',
+        '</a> ',
+        '<a class="remove" href="javascript:void(0)" id="remove" title="Delete">',
+        '<i class="fa fa-remove"></i>',
+        '</a> '
+        ].join('');
+    };
+
+
+</script>
+<div class="container mt-3">
+    <h2>Users</h2>
+    <button type="button" id="btnAddUser" class="btn btn-primary fa-add" data-bs-toggle="modal" data-bs-target="#userModal">
+        Add User
+    </button>
+    <table id="UsersList" class="table table-striped"
+           data-toggle="table"
+           data-classes="table table-hover table-bordered"
+           data-row-style="rowStyle"
+           data-search="true"
+           data-unique-id="UserName"
+           data-click-to-select="true"
+           data-pagination="true"
+           data-page-list="[5, 10, 20]">
+        <thead>
+            <tr>
+                <th data-field="UserName" data-sortable="true">User Name</th>
+                <th data-field="Name" data-sortable="true">Name</th>
+                <th data-field="AccLevel" data-sortable="true">Account Level</th>
+                @*<th data-field="Password">Password</th>
+                <th data-field="ExpDate">ExpDate</th>
+                <th data-field="ErrorCtrl">ErrorCtrl</th>*@
+                <th data-field="Locked">Locked</th>
+                <th data-field="Action" data-formatter="actionFormatter" data-events="actionEvents">Action</th>
+            </tr>
+        </thead>
+    </table>
+    <div class="modal fade" id="userModal">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title" id="modal-title"></h4>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form method="post" class="formcontainer" novalidate="" autocomplete="off">
+                        <div class="mb-3 mt-3">
+                            <label for="username" class="form-label">Username:</label>
+                            <input type="text" class="form-control" id="modal-username" placeholder="Enter Username" name="UserName" required="" autofocus="">
+                            <div class="invalid-feedback">
+                                Username is required
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Name:</label>
+                            <input type="text" class="form-control" id="modal-name" placeholder="Enter name" name="Name" required="" autofocus="">
+                            <div class="invalid-feedback">
+                                Name is required
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="pwd" class="form-label">Password:</label>
+                            <input type="password" class="form-control" id="modal-pwd" placeholder="Enter password" name="Password" required="" autofocus="" pattern=".{6,}">
+                            <div class="invalid-feedback">
+                                Password must be at least 6 characters or more
+                            </div>
+                        </div>
+                        <label for="acclvl" class="form-label">Account Level:</label>
+                        <select class="form-select" id="modal-accLvl">
+                            <option value="ADMIN">ADMIN</option>
+                            <option value="CHECKER">CHECKER</option>
+                        </select>
+                        <br />
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="modal-locked">
+                            <label class="form-check-label" for="modal-locked">
+                                Locked out
+                            </label>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" id="btnSave" class="btn btn-primary">Save</button>
+                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Close</button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
