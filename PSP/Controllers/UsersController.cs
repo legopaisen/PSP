@@ -47,6 +47,7 @@ namespace PSP.Controllers
                     {
                         audit.Insert(new Models.AuditTrailModel()
                         {
+                            Control_No = 2,
                             UserName = HttpContext.Session.GetString("UserId"),
                             Details = "Create User",
                             Date_Time = DateTime.Now
@@ -88,6 +89,7 @@ namespace PSP.Controllers
             {
                 audit.Insert(new Models.AuditTrailModel()
                 {
+                    Control_No = 4,
                     UserName = HttpContext.Session.GetString("UserId"),
                     Details = "Delete User",
                     Date_Time = DateTime.Now
@@ -116,6 +118,7 @@ namespace PSP.Controllers
             {
                 audit.Insert(new Models.AuditTrailModel()
                 {
+                    Control_No = 3,
                     UserName = HttpContext.Session.GetString("UserId"),
                     Details = "Edit User",
                     Date_Time = DateTime.Now

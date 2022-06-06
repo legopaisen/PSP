@@ -1,0 +1,43 @@
+﻿@{
+    ViewBag.Title = "Report - Audit Trail";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<script type="text/javascript">
+    $(document).ready(function () {
+        $.ajax({
+            cache: false,
+            url: '@Url.Action("AuditTrailReport", "Report")',
+            method: 'GET',
+            contentType: 'application/json',
+            success: function (data) {
+                $("#AuditTrailList").bootstrapTable('load', { data: data });
+                console.log(data);
+            },
+            error: function (err) {
+                console.log(err);
+            }
+        });
+    });
+</script>
+<div class="container mt-3 flex-shrink-1">
+    <h2>Report - Audit Trail</h2>
+    <a href="@Url.Action("DownloadViewPDF", "Report")" class="btn btn-primary"></a>
+    <table id="AuditTrailList" class="table table-striped"
+           data-toggle="table"
+           data-classes="table table-hover table-bordered"
+           data-row-style="rowStyle"
+           data-search="true"
+           data-unique-id="Control_No"
+           data-click-to-select="false"
+           data-pagination="true"
+           data-page-list="[5, 10, 20]">
+        <thead>
+            <tr>
+                <th data-field="Control_No" data-sortable="true">ID</th>
+                <th data-field="UserName" data-sortable="true">User</th>
+                <th data-field="Details" data-sortable="true">Details</th>
+                <th data-field="Date_Time">Date</th>
+            </tr>
+        </thead>
+    </table>
+</div>

@@ -9,6 +9,7 @@ namespace PSP.Models
 {
     public class Payroll_Users_MODEL
     {
+        public string Control_No { get; set; }
         public string UserName { get; set; }
         public string Name { get; set; }
         public string AccLevel { get; set; }
@@ -66,6 +67,7 @@ namespace PSP.Models
             DateTime dtExp = model.ExpDate.AddMonths(1);
             string sQuery = string.Empty;
             sQuery = "INSERT INTO Payroll_Users (UserName, Name, AccLevel, Password, ExpDate, ErrorCtrl, Locked) VALUES";
+            sQuery += $" ('{model.Control_No}', ";
             sQuery += $" ('{model.UserName}', ";
             sQuery += $" '{model.Name}', ";
             sQuery += $" '{model.AccLevel}', ";

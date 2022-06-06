@@ -60,6 +60,7 @@ namespace PSP.Controllers
                     {
                         audit.Insert(new Models.AuditTrailModel()
                         {
+                            Control_No = 1,
                             UserName = userid,
                             Details = "Login-Success",
                             Date_Time = DateTime.Now

@@ -10,14 +10,29 @@ html {
 main {
     display: flex;
     flex-wrap: nowrap;
-    height: 100vh;
+    /*height: 100vh;*/
     /*height: -webkit-fill-available;*/
-    max-height: 100vh;
+    /*max-height: 100vh;*/
     overflow-x: auto;
     overflow-y: hidden;
+    /*margin-left: 280px;*/ /* Same as the width of the sidebar */
+}
+
+main > .container {
+    /*margin-left: 280px;*/
 }
 
 footer{
+    
+}
+
+#sidemenu > li > a{
+    color: black;
+}
+
+
+#sidemenu > li > ul > li > a{
+    color: black;
 }
 
 .b-example-divider {
@@ -113,6 +128,16 @@ footer{
     .bd-placeholder-img-lg {
         font-size: 3.5rem;
     }
+}*/
+/*
+@media only screen and (max-width: 980px){
+    #sidebar{
+        width: 100px;
+    }
+    main > .container {
+        margin-left: 100px;
+    }
+
 }*/
 
 .navshadow {
