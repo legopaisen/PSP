@@ -67,7 +67,6 @@ namespace PSP.Models
             DateTime dtExp = model.ExpDate.AddMonths(1);
             string sQuery = string.Empty;
             sQuery = "INSERT INTO Payroll_Users (UserName, Name, AccLevel, Password, ExpDate, ErrorCtrl, Locked) VALUES";
-            sQuery += $" ('{model.Control_No}', ";
             sQuery += $" ('{model.UserName}', ";
             sQuery += $" '{model.Name}', ";
             sQuery += $" '{model.AccLevel}', ";

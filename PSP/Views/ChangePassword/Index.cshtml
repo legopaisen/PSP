@@ -34,12 +34,11 @@
     $(document).ready(function () {
         $("#btnSave").on('click', function (event) {
             CheckPassword();
-
         });
 
         function CheckPassword() {
             var pass = $("#password").val();
-            var UserName = "@TempData["UserName"].ToString()";
+            var UserName = "@TempData["UserName"]";
             var newPass = $("#confirmpassword").val();
             var confPass = $("#newpassword").val();
             $.ajax({
