@@ -5,7 +5,6 @@
 <script type="text/javascript">
     $(document).ready(function () {
         var isEdit = true;
-        $("#UsersList").bootstrapTable('hideColumn', 'Locked');
         $('#userModal').on('hidden.bs.modal', function () {
             $(this).find('form')[0].reset();
         });
@@ -15,6 +14,7 @@
             method: 'GET',
             contentType: 'application/json',
             success: function (data) {
+                console.log(data);
                 $("#UsersList").bootstrapTable('load', { data: data });
             },
             error: function (err) {
@@ -22,13 +22,13 @@
             }
         });
         window.actionEvents = {
-            'click .remove': function (e, value, row, index) {
+            'click .deactivate': function (e, value, row, index) {
                 var model = {
                    UserName: row.UserName
                 }
                 swal({
-                    title: "Delete User?",
-                    text: "User will be deleted permanently",
+                    title: "Deactivate User?",
+                    text: "User will be deactivated",
                     icon: "warning",
                     buttons: true,
                     dangerMode: true,
@@ -40,7 +40,7 @@
                             data: JSON.stringify(model),
                             type: "POST",
                             contentType: "application/json",
-                            url: "@Url.Action("DeleteUser", "Users")",
+                            url: "@Url.Action("ActivateUser", "Users")",
                             datatype: "json",
                             success: function (data) {
                                 swal("Success", data.Description, "success")
@@ -65,9 +65,9 @@
                 $('#userModal').modal('show');
                 document.getElementById("modal-username").value = row.UserName;
                 document.getElementById("modal-name").value = row.Name;
+                document.getElementById("modal-email").value = row.Email;
                 document.getElementById("modal-username").disabled = true;
-                document.getElementById("modal-pwd").disabled = true;
-                document.getElementById("modal-locked").disabled = false;
+                document.getElementById("btnSearch").disabled = true;
                 document.getElementById("modal-title").textContent = "Update User";
             }
         }
@@ -77,8 +77,6 @@
             document.getElementById("modal-username").value = "";
             document.getElementById("modal-name").value = "";
             document.getElementById("modal-username").disabled = false;
-            document.getElementById("modal-pwd").disabled = false;
-            document.getElementById("modal-locked").disabled = true;
             document.getElementById("modal-title").textContent = "Add New User";
 
         });
@@ -88,21 +86,15 @@
        //Insert/Update User
         $(".modal-footer #btnSave").on('click', function () {
 
-            var intLocked = 0;
-            if ($('#modal-locked:checked').is(':checked')) {
-                intLocked = 1;
-            }
             var model = {
                 UserName: $("#modal-username").val(),
                 Name: $("#modal-name").val(),
                 AccLevel: $("#modal-accLvl").val(),
-                Password: $("#modal-pwd").val(),
-                ExpDate: dateToday, //date today plus 1 month
-                ErrorCtrl: '0',
-                Locked: intLocked
+                CreatedOn: dateToday,
+                Email: $("#modal-email").val()
             };
             if (isEdit == false) { //insert
-                if ($("#modal-username").val() != "" && $("#modal-pwd").val() != "" && $("#modal-pwd").val().length >= 6 && $("#modal-name").val() != "") {
+                if ($("#modal-username").val() != "" && $("#modal-email").val() != "" && $("#modal-name").val() != "") {
                     $.ajax({
                         cache: false,
                         url: "@Url.Action("SearchUser", "Users")",
@@ -158,10 +150,17 @@
                 }
             }
             else { //update
+                var model2 = {
+                UserName: $("#modal-username").val(),
+                Name: $("#modal-name").val(),
+                AccLevel: $("#modal-accLvl").val(),
+                ModifiedBy: '@ViewBag.User',
+                ModifiedOn: dateToday,
+            };
                 if ($("#modal-username").val() != "" && $("#modal-name").val() != "") {
                     $.ajax({
                         cache: false,
-                        data: JSON.stringify(model),
+                        data: JSON.stringify(model2),
                         type: "POST",
                         contentType: "application/json",
                         url: "@Url.Action("EditUser", "Users")",
@@ -205,6 +204,30 @@
                     }, false)
                 })
         })()
+
+        $("#btnSearch").on("click", function() {
+            var id = $("#modal-username").val();
+            $.ajax({
+                cache: false,
+                url: "@Url.Action("SearchEmployeeID", "Users")",
+                data: { sEmployeeID: id },
+                dataType:'json',
+                method: "GET",
+                contentType: "application/json",
+                success: function(data) {
+                    if (data.Username != null) {
+                        $("#modal-name").val(data.FullName);
+                        $("#modal-email").val(data.EmailAddress);
+                    }
+                    else {
+                        swal("Oops!", "Invalid Network ID", "error");
+                    }
+                },
+                error: function(response) {
+
+                }
+            });
+        });
     });
 
     function actionFormatter(value, row, index) {
@@ -212,8 +235,8 @@
         '<a class="edit" href="#" title="Edit">',
         '<i class="fa fa-edit"></i>',
         '</a> ',
-        '<a class="remove" href="javascript:void(0)" id="remove" title="Delete">',
-        '<i class="fa fa-remove"></i>',
+        '<a class="deactivate" href="javascript:void(0)" id="deactivate" title="Deactivate">',
+        '<i class="fa-solid fa-ban"></i>',
         '</a> '
         ].join('');
     };
@@ -238,11 +261,11 @@
             <tr>
                 <th data-field="UserName" data-sortable="true">User Name</th>
                 <th data-field="Name" data-sortable="true">Name</th>
+                <th data-field="Email">Email</th>
                 <th data-field="AccLevel" data-sortable="true">Account Level</th>
-                @*<th data-field="Password">Password</th>
-                <th data-field="ExpDate">ExpDate</th>
-                <th data-field="ErrorCtrl">ErrorCtrl</th>*@
-                <th data-field="Locked">Locked</th>
+                <th data-field="CreatedOn">Created On</th>
+                <th data-field="ModifiedBy">Modified By</th>
+                <th data-field="ModifiedOn">Modified On</th>
                 <th data-field="Action" data-formatter="actionFormatter" data-events="actionEvents">Action</th>
             </tr>
         </thead>
@@ -255,26 +278,29 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <form method="post" class="formcontainer" novalidate="" autocomplete="off">
-                        <div class="mb-3 mt-3">
-                            <label for="username" class="form-label">Username:</label>
-                            <input type="text" class="form-control" id="modal-username" placeholder="Enter Username" name="UserName" required="" autofocus="">
+                    <form method="post" class="formcontainer form-group" novalidate="" autocomplete="off">
+                        <div class="input-group mb-3 mt-3">
+                            <label for="username" class="form-label">Network ID:</label>
+                            <input type="text" class="form-control mr-2" id="modal-username" placeholder="Enter Network ID" name="UserName" required="" autofocus="" style="width:70%">
+                            <div class="input-group-addon">
+                                <button type="button" class="btn btn-primary" id="btnSearch"><i class="fa-solid fa-magnifying-glass"></i></button>
+                            </div>
                             <div class="invalid-feedback">
-                                Username is required
+                                Network ID is required
                             </div>
                         </div>
                         <div class="mb-3">
                             <label for="name" class="form-label">Name:</label>
-                            <input type="text" class="form-control" id="modal-name" placeholder="Enter name" name="Name" required="" autofocus="">
+                            <input type="text" class="form-control" id="modal-name" name="Name" required="" autofocus="" disabled>
                             <div class="invalid-feedback">
                                 Name is required
                             </div>
                         </div>
                         <div class="mb-3">
-                            <label for="pwd" class="form-label">Password:</label>
-                            <input type="password" class="form-control" id="modal-pwd" placeholder="Enter password" name="Password" required="" autofocus="" pattern=".{6,}">
+                            <label for="email" class="form-label">E-mail:</label>
+                            <input type="email" class="form-control" id="modal-email" name="email" required="" autofocus="" disabled>
                             <div class="invalid-feedback">
-                                Password must be at least 6 characters or more
+                                E-mail is required
                             </div>
                         </div>
                         <label for="acclvl" class="form-label">Account Level:</label>
@@ -282,13 +308,6 @@
                             <option value="ADMIN">ADMIN</option>
                             <option value="CHECKER">CHECKER</option>
                         </select>
-                        <br />
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="modal-locked">
-                            <label class="form-check-label" for="modal-locked">
-                                Locked out
-                            </label>
-                        </div>
                     </form>
                 </div>
                 <div class="modal-footer">

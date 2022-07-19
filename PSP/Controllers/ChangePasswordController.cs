@@ -20,20 +20,20 @@ namespace PSP.Controllers
             return View();
         }
 
-        [HttpPost]
-        public JsonResult ChangePassword([FromBody] Payroll_Users_MODEL model)
-        {
-            Response response = new Response();
-            using (Payroll_Users user = new Payroll_Users())
-            {
-                if (user.ChangePassword(model) > 0)
-                {
-                    response.ResponseStat = 1;
-                    response.Description = "Password changed!";
-                }
-            }
-            return Json(response);
-        }
+        //[HttpPost]
+        //public JsonResult ChangePassword([FromBody] Payroll_Users_MODEL model)
+        //{
+        //    Response response = new Response();
+        //    using (Payroll_Users user = new Payroll_Users())
+        //    {
+        //        if (user.ChangePassword(model) > 0)
+        //        {
+        //            response.ResponseStat = 1;
+        //            response.Description = "Password changed!";
+        //        }
+        //    }
+        //    return Json(response);
+        //}
 
 
     }

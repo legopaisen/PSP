@@ -9,14 +9,15 @@ namespace PSP.Models
 {
     public class Payroll_Users_MODEL
     {
-        public string Control_No { get; set; }
         public string UserName { get; set; }
         public string Name { get; set; }
         public string AccLevel { get; set; }
-        public string Password { get; set; }
-        public DateTime ExpDate { get; set; }
-        public int ErrorCtrl { get; set; }
-        public int Locked { get; set; }
+        public DateTime CreatedOn { get; set; }
+        public string ModifiedBy { get; set; }
+        public string ModifiedOn { get; set; }
+        public string Email { get; set; }
+        public int Active { get; set; }
+
     }
     public class Payroll_Users : IDisposable
     {
@@ -50,10 +51,10 @@ namespace PSP.Models
                                 UserName = dr.GetString(0).ToString(),
                                 Name = dr.GetString(1).ToString(),
                                 AccLevel = dr.GetString(2).ToString(),
-                                Password = dr.GetString(3).ToString(),
-                                ExpDate = dr.GetDateTime(4),
-                                ErrorCtrl = dr.GetInt32(5),
-                                Locked = dr.GetInt32(6)
+                                CreatedOn = dr.GetDateTime(3),
+                                ModifiedBy = dr.IsDBNull(4) ? null : dr.GetString(4),
+                                ModifiedOn = dr.IsDBNull(5) ? null : dr.GetDateTime(5).ToString(),
+                                Email = dr.IsDBNull(6) ? null : dr.GetString(6)
                             });
                         }
                 }
@@ -64,16 +65,15 @@ namespace PSP.Models
         public int InsertUser(Payroll_Users_MODEL model)
         {
             int iReturn = 0;
-            DateTime dtExp = model.ExpDate.AddMonths(1);
             string sQuery = string.Empty;
-            sQuery = "INSERT INTO Payroll_Users (UserName, Name, AccLevel, Password, ExpDate, ErrorCtrl, Locked) VALUES";
+            sQuery = "INSERT INTO Payroll_Users (UserName, Name, AccLevel, CreatedOn, ModifiedBy, ModifiedOn, Email) VALUES";
             sQuery += $" ('{model.UserName}', ";
             sQuery += $" '{model.Name}', ";
             sQuery += $" '{model.AccLevel}', ";
-            sQuery += $" '{model.Password}', ";
-            sQuery += $" '{dtExp.ToString("yyyy-MM-dd")}', ";
-            sQuery += $" '{model.ErrorCtrl}', ";
-            sQuery += $" '{model.Locked}')";
+            sQuery += $" '{model.CreatedOn}', ";
+            sQuery += $" '{model.ModifiedBy}', ";
+            sQuery += $" '{model.ModifiedOn}', ";
+            sQuery += $" '{model.Email}')";
 
             using(SqlConnection con = new SqlConnection(SqlHelper.GetConnection().ConnectionString.ToString()))
             {
@@ -111,10 +111,10 @@ namespace PSP.Models
                                 UserName = dr.GetString(0).ToString(),
                                 Name = dr.GetString(1).ToString(),
                                 AccLevel = dr.GetString(2).ToString(),
-                                Password = dr.GetString(3).ToString(),
-                                ExpDate = dr.GetDateTime(4),
-                                ErrorCtrl = dr.GetInt32(5),
-                                Locked = dr.GetInt32(6)
+                                CreatedOn = dr.GetDateTime(3),
+                                ModifiedBy = dr.GetString(4) == null ? "" : "",
+                                ModifiedOn = dr.GetDateTime(5).ToString() == null ? "" : "",
+                                Email = dr.GetString(6).ToString() == null ? "" : ""
                             });
                         }
                 }
@@ -122,25 +122,36 @@ namespace PSP.Models
             return list;
         }
 
-        public int DeleteUser(string UserName)
+        public int ActivateUser(string UserName)
         {
             string sQuery = string.Empty;
-            int iReturn = 0;
-            sQuery = $"DELETE FROM Payroll_Users WHERE UserName = '{UserName}'";
+            int iCurrActive = 0;
+            int iSetActive = 0;
 
             using(SqlConnection con = new SqlConnection(SqlHelper.GetConnection().ConnectionString))
             {
                 using(SqlCommand cmd = con.CreateCommand())
                 {
-                    cmd.CommandText = sQuery;
                     con.Open();
+                    cmd.CommandText = $"select Active from payroll_users WHERE UserName = '{UserName}'";
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            iCurrActive = reader.GetInt32(0);
+                        }
+                        if (iCurrActive == 1)
+                            iSetActive = 0;
+                        else
+                            iSetActive = 1;
+                    }
+
+                    cmd.CommandText = $"UPDATE Payroll_Users SET Active = '{iSetActive}' WHERE UserName = '{UserName}'";
                     if (cmd.ExecuteNonQuery() == 0)
                     { }
-                    else
-                        iReturn++;
                 }
             }
-            return iReturn;
+            return iSetActive;
         }
 
         public int EditUser(Payroll_Users_MODEL model)
@@ -148,10 +159,7 @@ namespace PSP.Models
             string sQuery = string.Empty;
             int iReturn = 0;
             sQuery = "UPDATE Payroll_Users SET ";
-            if (string.IsNullOrEmpty(model.Name))
-                sQuery += $"AccLevel = '{model.AccLevel}' WHERE UserName = '{model.UserName}'";
-            else
-                sQuery += $"Name = '{model.Name}', AccLevel = '{model.AccLevel}' WHERE UserName = '{model.UserName}'";
+            sQuery += $"AccLevel = '{model.AccLevel}', ModifiedBy = '{model.ModifiedBy}', ModifiedOn = '{model.ModifiedOn}' WHERE UserName = '{model.UserName}'";
 
             using (SqlConnection con = new SqlConnection(SqlHelper.GetConnection().ConnectionString))
             {
@@ -168,24 +176,24 @@ namespace PSP.Models
             return iReturn;
         }
 
-        public int ChangePassword(Payroll_Users_MODEL model)
-        {
-            int iReturn = 0;
-            string sQuery = string.Empty;
-            sQuery = $"UPDATE Payroll_Users SET Password = '{model.Password}' WHERE UserName = '{model.UserName}'";
-            using (SqlConnection con = new SqlConnection(SqlHelper.GetConnection().ConnectionString))
-            {
-                using (SqlCommand cmd = con.CreateCommand())
-                {
-                    cmd.CommandText = sQuery;
-                    con.Open();
-                    if (cmd.ExecuteNonQuery() == 0)
-                    { }
-                    else
-                        iReturn++;
-                }
-            }
-            return iReturn;
-        }
+        //public int ChangePassword(Payroll_Users_MODEL model)
+        //{
+        //    int iReturn = 0;
+        //    string sQuery = string.Empty;
+        //    sQuery = $"UPDATE Payroll_Users SET Email = '{model.Email}' WHERE UserName = '{model.UserName}'";
+        //    using (SqlConnection con = new SqlConnection(SqlHelper.GetConnection().ConnectionString))
+        //    {
+        //        using (SqlCommand cmd = con.CreateCommand())
+        //        {
+        //            cmd.CommandText = sQuery;
+        //            con.Open();
+        //            if (cmd.ExecuteNonQuery() == 0)
+        //            { }
+        //            else
+        //                iReturn++;
+        //        }
+        //    }
+        //    return iReturn;
+        //}
     }
 }

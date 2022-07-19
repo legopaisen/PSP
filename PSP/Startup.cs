@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,6 +18,7 @@ namespace PSP
     {
         public Startup(IConfiguration configuration)
         {
+            SystemCore.SecurityKey = "5329b65f5b773130e1f6b864d72dd231";
             Configuration = configuration;
             SqlHelper.connectionString = ConfigurationExtensions.GetConnectionString(this.Configuration, "DefaultConnection");
         }
@@ -36,9 +38,17 @@ namespace PSP
             .AddCookie(x => x.LoginPath = "/Login/Index");
 
             services.AddControllersWithViews().AddRazorRuntimeCompilation(); //compile view changes in runtime
+            services.AddMvc().AddRazorRuntimeCompilation();
 
             services.AddMvc()
             .AddJsonOptions(options => options.JsonSerializerOptions.PropertyNamingPolicy = null); //disables camelCasing
+
+            services.Configure<ForwardedHeadersOptions>(options =>
+            {
+                options.ForwardedHeaders =
+                    ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+            });
+
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -47,10 +57,12 @@ namespace PSP
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
+                app.UseForwardedHeaders();
             }
             else
             {
                 app.UseExceptionHandler("/Home/Error");
+                app.UseForwardedHeaders();
                 // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
             }

@@ -15,6 +15,9 @@
                         <h1 class="fs-4 card-title fw-bold mb-4">Payroll Partner</h1>
                         <form method="POST" class="needs-validation" novalidate="" autocomplete="off" action="@Url.Action("Login","Login")">
                             <div class="mb-3">
+                                <input id="hdnUserIDEncrypted" name="hdnUserIDEncrypted" value="" type="hidden" />
+                                <input id="hdnPasswordEncrypted" name="hdnPasswordEncrypted" value="" type="hidden" />
+                                <input type="hidden" value="@ViewBag.CryptoHashCode" id="HashCode" name="HashCode" />
                                 <label class="mb-2 text-muted" for="username">Username</label>
                                 <input type="text" class="form-control" id="username" name="userid" placeholder="Enter Username" required="" autofocus="" style="text-align: center">
                                 <div class="invalid-feedback">
@@ -53,40 +56,66 @@
 </section>
 
 <script>
-    $(document).ready(function () {
-        $("form").submit(function () {
-            //encryption here
-        })
+    $(document).ready(function() {
+        $("#HashCode").val("@ViewBag.CryptoHashCode");
+        $("#userid").val("");
+        $("#pwd").val("");
 
-        var loginNotif = "@TempData["Login"]";
-        if (loginNotif != "") {
-            swal("Login Error", "@TempData["Login"]", "error");
-        }
+        $("form").submit(function() {
+            var key = CryptoJS.enc.Utf8.parse($("#HashCode").val());
+            var iv = CryptoJS.enc.Utf8.parse($("#HashCode").val().substring(0, 16));
+            var encryptedlogin = CryptoJS.AES.encrypt(CryptoJS.enc.Utf8.parse($("#userid").val()), key,
+                {
+                    keySize: 256,
+                    iv: iv,
+                    mode: CryptoJS.mode.CBC,
+                    padding: CryptoJS.pad.Pkcs7
+                });
 
-        $('#username').keyup(function () {
-            this.value = this.value.toUpperCase();
+            var encryptedpassword = CryptoJS.AES.encrypt(CryptoJS.enc.Utf8.parse($("#pwd").val()), key,
+                {
+                    keySize: 256,
+                    iv: iv,
+                    mode: CryptoJS.mode.CBC,
+                    padding: CryptoJS.pad.Pkcs7
+                });
+
+            $("#hdnUserIDEncrypted").val(encryptedlogin);
+            $("#hdnPasswordEncrypted").val(encryptedpassword);
+            $("#userid").val("");
+            $("#pwd").val("");
+
+            var loginNotif = "@TempData["Login"]";
+            if (loginNotif != "") {
+                swal(loginNotif, loginNotif, "info");
+                @TempData.Remove("Login");
+            }
+
+            $('#userid').keyup(function() {
+                this.value = this.value.toUpperCase();
+            });
+
         });
 
-    });
+        //login validation
+        (function() {
+            'use strict'
 
-    //login validation
-    (function () {
-        'use strict'
+            // Fetch all the forms we want to apply custom Bootstrap validation styles to
+            var forms = document.querySelectorAll('.needs-validation')
 
-        // Fetch all the forms we want to apply custom Bootstrap validation styles to
-        var forms = document.querySelectorAll('.needs-validation')
+            // Loop over them and prevent submission
+            Array.prototype.slice.call(forms)
+                .forEach(function(form) {
+                    form.addEventListener('submit', function(event) {
+                        if (!form.checkValidity()) {
+                            event.preventDefault();
+                            event.stopPropagation();
+                        }
 
-        // Loop over them and prevent submission
-        Array.prototype.slice.call(forms)
-            .forEach(function (form) {
-                form.addEventListener('submit', function (event) {
-                    if (!form.checkValidity()) {
-                        event.preventDefault()
-                        event.stopPropagation()
-                    }
-
-                    form.classList.add('was-validated')
-                }, false)
-            })
-    })()
+                        form.classList.add('was-validated')
+                    }, false)
+                })
+        })
+    })
 </script>

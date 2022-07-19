@@ -25,6 +25,10 @@
     {
       "library": "bootstrap-icons@1.8.3",
       "destination": "wwwroot/bootstrap-icons/"
+    },
+    {
+      "library": "aes-js@3.1.2",
+      "destination": "wwwroot/aes-js/"
     }
   ]
 }

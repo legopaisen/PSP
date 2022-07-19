@@ -69,20 +69,31 @@ namespace PSP.Controllers
             return Json(new Models.Payroll_Users().GetUser(UserName));
         }
 
+        public JsonResult SearchEmployeeID(string sEmployeeID)
+        {
+            CTBC.Network.ActiveDirectory ad = new CTBC.Network.ActiveDirectory("LDAP://chinatrust.com.ph", "Z_ESSDEV", "Welcome1");
+            var data = ad.GetUserDetailsSingle(sEmployeeID);
+            return Json(data);
+        }
+
         [HttpPost]
-        public JsonResult DeleteUser([FromBody] Payroll_Users_MODEL model)
+        public JsonResult ActivateUser([FromBody] Payroll_Users_MODEL model)
         {
             Response response = new Response();
             using (Payroll_Users user = new Payroll_Users())
             {
-                if (user.DeleteUser(model.UserName) > 0)
+                if (user.ActivateUser(model.UserName) == 0)
                 {
                     if(model.UserName == HttpContext.Session.GetString("UserId"))
                         response.ResponseStat = 2;
                     else
                         response.ResponseStat = 1;
-
-                    response.Description = "User deleted!";
+                   
+                    response.Description = "User Deactivated!";
+                }
+                else
+                {
+                    response.Description = "User Activated!";
                 }
             }
             using (Models.AuditTrail audit = new AuditTrail())
