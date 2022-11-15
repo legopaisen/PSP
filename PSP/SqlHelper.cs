@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Oracle.ManagedDataAccess.Client;
+using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
@@ -9,6 +10,7 @@ namespace PSP
     public class SqlHelper
     {
         public static string connectionString;
+        public static string oracleConnectionString;
         public static SqlConnection GetConnection()
         {
             try
@@ -18,8 +20,19 @@ namespace PSP
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
-                throw;
+                return null;
+            }
+        }
+        public static OracleConnection GetOracleConnection()
+        {
+            try
+            {
+                OracleConnection connection = new OracleConnection(oracleConnectionString);
+                return connection;
+            }
+            catch (Exception e)
+            {
+                return null;
             }
         }
     }

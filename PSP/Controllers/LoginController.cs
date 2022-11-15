@@ -30,7 +30,7 @@ namespace PSP.Controllers
         }
         public IActionResult Login(string userid, string pwd)
         {
-            if(ModelState.IsValid)
+            if (ModelState.IsValid)
             { }
             if (User.Identity.IsAuthenticated)
             {
@@ -44,7 +44,7 @@ namespace PSP.Controllers
                 {
                     strIP = Response.HttpContext.GetServerVariable("REMOTE_ADDR");
                 }
-                if(string.IsNullOrEmpty(strIP))
+                if (string.IsNullOrEmpty(strIP))
                 {
                     strIP = Response.HttpContext.Connection.LocalIpAddress.ToString();
                 }
@@ -57,6 +57,29 @@ namespace PSP.Controllers
                 //string strPassword = new SystemCore().DecryptStringAES(Request.Form["hdnPasswordEncrypted"].ToString(), Request.Form["HashCode"].ToString());
                 string strNetworkID = userid;
                 string strPassword = pwd;
+
+                //temporary login block
+                var claims = new List<Claim>
+                                {
+                                new Claim(ClaimTypes.Name, "claim")
+                                };
+
+                if (User.Identity.IsAuthenticated)
+                {
+                    return RedirectToAction("Index", "Home");
+                }
+                var claimIdentity = new ClaimsIdentity(claims, userid);
+                var ClaimsPrincipal = new ClaimsPrincipal(claimIdentity);
+                var authenticationProperty = new AuthenticationProperties
+                {
+                    IsPersistent = false
+                };
+                HttpContext.SignInAsync(ClaimsPrincipal, authenticationProperty);
+               
+                HttpContext.Session.SetString("UserId", userid);
+
+                return RedirectToAction("Index", "Login");
+
 
                 CTBC.Cryptography.AES crypto = new CTBC.Cryptography.AES(SystemCore.SecurityKey);
 
@@ -79,35 +102,35 @@ namespace PSP.Controllers
                             }
                             else
                             {
-                                var claims = new List<Claim>
-                                {
-                                new Claim(ClaimTypes.Name, "claim")
-                                };
+                                //var claims = new List<Claim>
+                                //{
+                                //new Claim(ClaimTypes.Name, "claim")
+                                //};
 
-                                if (User.Identity.IsAuthenticated)
-                                {
-                                    return RedirectToAction("Index", "Home");
-                                }
-                                var claimIdentity = new ClaimsIdentity(claims, userid);
-                                var ClaimsPrincipal = new ClaimsPrincipal(claimIdentity);
-                                var authenticationProperty = new AuthenticationProperties
-                                {
-                                    IsPersistent = false
-                                };
-                                HttpContext.SignInAsync(ClaimsPrincipal, authenticationProperty);
+                                //if (User.Identity.IsAuthenticated)
+                                //{
+                                //    return RedirectToAction("Index", "Home");
+                                //}
+                                //var claimIdentity = new ClaimsIdentity(claims, userid);
+                                //var ClaimsPrincipal = new ClaimsPrincipal(claimIdentity);
+                                //var authenticationProperty = new AuthenticationProperties
+                                //{
+                                //    IsPersistent = false
+                                //};
+                                //HttpContext.SignInAsync(ClaimsPrincipal, authenticationProperty);
 
-                                using (Models.AuditTrail audit = new AuditTrail())
-                                {
-                                    audit.Insert(new Models.AuditTrailModel()
-                                    {
-                                        Control_No = 1,
-                                        UserName = userid,
-                                        Details = "Login-Success",
-                                        Date_Time = DateTime.Now
-                                    });
-                                }
+                                //using (Models.AuditTrail audit = new AuditTrail())
+                                //{
+                                //    audit.Insert(new Models.AuditTrailModel()
+                                //    {
+                                //        Control_No = 1,
+                                //        UserName = userid,
+                                //        Details = "Login-Success",
+                                //        Date_Time = DateTime.Now
+                                //    });
+                                //}
 
-                                HttpContext.Session.SetString("UserId", userid);
+                                //HttpContext.Session.SetString("UserId", userid);
                             }
                         }
                         else

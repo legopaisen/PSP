@@ -2,3 +2,70 @@
     ViewData["Title"] = "Home Page";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
+<div>
+    <div class="mb-3">
+        <h2>File Conversion</h2>
+    </div>
+    <form method="post" id="formupload" style="max-width: 75vw">
+        <div class="mb-3">
+            <label for="formFile" class="form-label">PYCTB FILE (*.txt)</label>
+            <input class="form-control" type="file" id="formFile" accept="text/plain">
+        </div>
+        <button id="btnProcess" type="submit" class="btn btn-primary" disabled>Process</button>
+    </form>
+</div>
+
+
+<script>
+    $(document).ready(function() {
+
+        $('input[type=file]').change(function() {
+            if ($('input[type=file]').val() == '') {
+                $('#btnProcess').attr('disabled', true)
+            }
+            else {
+                $('#btnProcess').attr('disabled', false);
+            }
+        })
+
+        $("#formupload").submit(function(e) {
+            e.preventDefault();
+            var file = $('#formFile')[0].files[0].name;
+            Swal.fire({
+                title: 'Processing. Please wait!',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                allowEnterKey: false,
+                didOpen: () => {
+                    Swal.showLoading()
+                }
+            });
+            $.ajax({
+                cache: false,
+                url: "@Url.Action("ProcessFile", "Home")",
+                data: { sFileName: file },
+                method: "POST",
+                success: function(result) {
+                    if (result.ResponseStat == 2) {
+                        Swal.hideLoading();
+                        swal.fire("Success", result.Description, "success")
+                            .then((value) => {
+                                window.location = "@Url.Action("Index", "Home")";
+                            });
+                    }
+                    else if (result.ResponseStat == 1) {
+                        swal.fire("Error", result.Description, "error")
+                            .then((value) => {
+                                window.location = "@Url.Action("Index", "Home")";
+                            });
+                    }
+
+                },
+                error: function(result) {
+                }
+            })
+
+        });
+
+    });
+</script>

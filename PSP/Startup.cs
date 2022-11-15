@@ -21,6 +21,7 @@ namespace PSP
             SystemCore.SecurityKey = "5329b65f5b773130e1f6b864d72dd231";
             Configuration = configuration;
             SqlHelper.connectionString = ConfigurationExtensions.GetConnectionString(this.Configuration, "DefaultConnection");
+            SqlHelper.oracleConnectionString = ConfigurationExtensions.GetConnectionString(this.Configuration, "OracleConnection");
         }
 
         public IConfiguration Configuration { get; }

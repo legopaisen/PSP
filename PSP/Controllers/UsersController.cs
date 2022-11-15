@@ -12,11 +12,6 @@ using System.Threading.Tasks;
 
 namespace PSP.Controllers
 {
-    public struct Response
-    {
-        public int ResponseStat { get; set; }
-        public string Description { get; set; }
-    }
     [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     [Authorize]
     public class UsersController : Controller
@@ -35,7 +30,7 @@ namespace PSP.Controllers
         [HttpPost]
         public JsonResult InsertUser([FromBody] Payroll_Users_MODEL model)
         {
-            Response response = new Response();
+            Response response = new Response(); 
             using (Payroll_Users user = new Payroll_Users())
             {
                 if (user.InsertUser(model) > 0)
