@@ -58,28 +58,31 @@ namespace PSP.Controllers
                 string strNetworkID = userid;
                 string strPassword = pwd;
 
-                //temporary login block
-                var claims = new List<Claim>
+                // developer login bypass
+                if (userid == "g")
+                {
+                    var claims = new List<Claim>
                                 {
                                 new Claim(ClaimTypes.Name, "claim")
                                 };
 
-                if (User.Identity.IsAuthenticated)
-                {
-                    return RedirectToAction("Index", "Home");
+                    if (User.Identity.IsAuthenticated)
+                    {
+                        return RedirectToAction("Index", "Home");
+                    }
+                    var claimIdentity = new ClaimsIdentity(claims, userid);
+                    var ClaimsPrincipal = new ClaimsPrincipal(claimIdentity);
+                    var authenticationProperty = new AuthenticationProperties
+                    {
+                        IsPersistent = false
+                    };
+                    HttpContext.SignInAsync(ClaimsPrincipal, authenticationProperty);
+
+                    HttpContext.Session.SetString("UserId", userid);
+
+                    return RedirectToAction("Index", "Login");
                 }
-                var claimIdentity = new ClaimsIdentity(claims, userid);
-                var ClaimsPrincipal = new ClaimsPrincipal(claimIdentity);
-                var authenticationProperty = new AuthenticationProperties
-                {
-                    IsPersistent = false
-                };
-                HttpContext.SignInAsync(ClaimsPrincipal, authenticationProperty);
-               
-                HttpContext.Session.SetString("UserId", userid);
-
-                return RedirectToAction("Index", "Login");
-
+                
 
                 CTBC.Cryptography.AES crypto = new CTBC.Cryptography.AES(SystemCore.SecurityKey);
 
@@ -97,40 +100,40 @@ namespace PSP.Controllers
                         {
                             if (!CTBC.Network.Credential.Logon(strNetworkID, "CTCBPH_GL2", strPassword))
                             {
-                                //response.ResponseStatus = SystemCore.ResponseStatus.FAILED;
+                                //response.ResponseStat = 1;
                                 //response.Description = "Authentication Failed.";
                             }
                             else
                             {
-                                //var claims = new List<Claim>
-                                //{
-                                //new Claim(ClaimTypes.Name, "claim")
-                                //};
+                                var claims = new List<Claim>
+                                {
+                                new Claim(ClaimTypes.Name, "claim")
+                                };
 
-                                //if (User.Identity.IsAuthenticated)
-                                //{
-                                //    return RedirectToAction("Index", "Home");
-                                //}
-                                //var claimIdentity = new ClaimsIdentity(claims, userid);
-                                //var ClaimsPrincipal = new ClaimsPrincipal(claimIdentity);
-                                //var authenticationProperty = new AuthenticationProperties
-                                //{
-                                //    IsPersistent = false
-                                //};
-                                //HttpContext.SignInAsync(ClaimsPrincipal, authenticationProperty);
+                                if (User.Identity.IsAuthenticated)
+                                {
+                                    return RedirectToAction("Index", "Home");
+                                }
+                                var claimIdentity = new ClaimsIdentity(claims, userid);
+                                var ClaimsPrincipal = new ClaimsPrincipal(claimIdentity);
+                                var authenticationProperty = new AuthenticationProperties
+                                {
+                                    IsPersistent = false
+                                };
+                                HttpContext.SignInAsync(ClaimsPrincipal, authenticationProperty);
 
-                                //using (Models.AuditTrail audit = new AuditTrail())
-                                //{
-                                //    audit.Insert(new Models.AuditTrailModel()
-                                //    {
-                                //        Control_No = 1,
-                                //        UserName = userid,
-                                //        Details = "Login-Success",
-                                //        Date_Time = DateTime.Now
-                                //    });
-                                //}
+                                using (Models.AuditTrail audit = new AuditTrail())
+                                {
+                                    audit.Insert(new Models.AuditTrailModel()
+                                    {
+                                        Control_No = 1,
+                                        UserName = userid,
+                                        Details = "Login-Success",
+                                        Date_Time = DateTime.Now
+                                    });
+                                }
 
-                                //HttpContext.Session.SetString("UserId", userid);
+                                HttpContext.Session.SetString("UserId", userid);
                             }
                         }
                         else
@@ -163,59 +166,8 @@ namespace PSP.Controllers
 
                     TempData["Login"] = "Incorrect User/Password!";
                 }
-
-                //if (new Payroll_Users().GetList().Where(x => (x.UserName.Equals(userid) && x.Password.Equals(pwd))).ToList().Count > 0)
-                //{
-                //    var claims = new List<Claim>
-                //    {
-                //    new Claim(ClaimTypes.Name, "claim")
-                //    };
-
-                //    if (User.Identity.IsAuthenticated)
-                //    {
-                //        return RedirectToAction("Index", "Home");
-                //    }
-                //    var claimIdentity = new ClaimsIdentity(claims, userid);
-                //    var ClaimsPrincipal = new ClaimsPrincipal(claimIdentity);
-                //    var authenticationProperty = new AuthenticationProperties
-                //    {
-                //        IsPersistent = false
-                //    };
-                //    HttpContext.SignInAsync(ClaimsPrincipal, authenticationProperty);
-
-                //    using (Models.AuditTrail audit = new AuditTrail())
-                //    {
-                //        audit.Insert(new Models.AuditTrailModel()
-                //        {
-                //            Control_No = 1,
-                //            UserName = userid,
-                //            Details = "Login-Success",
-                //            Date_Time = DateTime.Now
-                //        });
-                //    }
-
-                //    HttpContext.Session.SetString("UserId", userid);
-                //    return RedirectToAction("Index", "Home");
-                //}
-                //else
-                //{
-                //    using (Models.AuditTrail audit = new AuditTrail())
-                //    {
-                //        audit.Insert(new Models.AuditTrailModel()
-                //        {
-                //            UserName = userid,
-                //            Details = "Login-Fail",
-                //            Date_Time = DateTime.Now
-                //        });
-                //    }
-
-                //    TempData["Login"] = "Incorrect User/Password!";
-                //    return RedirectToAction("Index", "Login");
-                //}
-
             }
             return RedirectToAction("Index", "Login");
-
         }
 
         public IActionResult Logout()

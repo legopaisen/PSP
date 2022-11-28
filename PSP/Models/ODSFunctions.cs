@@ -38,10 +38,10 @@ namespace PSP.Models
                 public int OrderingSystemID { get; set; }
                 public string Entity { get; set; }
 
-                [XmlElement("Bookingdetailslist")]
-                public List<bookingDetailsList> Bookingdetailslist { get; set; }
+                [XmlElement("BookingDetails")]
+                public List<bookingDetails> BookingDetails { get; set; }
             }
-            public struct bookingDetailsList
+            public struct bookingDetails
             {
                 public AccountAmount AccountAmount { get; set; }
                 public AccountNumber AccountNumber { get; set; }
@@ -50,7 +50,7 @@ namespace PSP.Models
                 public string BusinessTransactionDetail1 { get; set; }
                 public string BusinessTransactionDetail2 { get; set; }
                 public string CashBlockID { get; set; }
-                public int CustomerExchangeRate { get; set; }
+                //public int CustomerExchangeRate { get; set; }
                 public int CashIndicator { get; set; }
                 public string ReconciliationReferenceID { get; set; }
                 public string NarrativeID { get; set; }
@@ -215,7 +215,7 @@ namespace PSP.Models
                     TransactionSource = "3777",
                     OrderingSystemID = 19,
                     Entity = "GCTBCPH001",
-                    Bookingdetailslist = FillBookingDetails(sMotherAccount, sChildAccount, decAmount.ToString())
+                    BookingDetails = FillBookingDetails(sMotherAccount, sChildAccount, decAmount.ToString())
                 });
                 iCntBookingID++;
             }
@@ -226,9 +226,9 @@ namespace PSP.Models
             return bookingMasterlist;
         }
 
-        public List<CreateBookingRequest.bookingDetailsList> FillBookingDetails(string sMotherAccount, string sChildAccount, string sAmount)
+        public List<CreateBookingRequest.bookingDetails> FillBookingDetails(string sMotherAccount, string sChildAccount, string sAmount)
         {
-            List<CreateBookingRequest.bookingDetailsList> bookingdetailslist = new List<CreateBookingRequest.bookingDetailsList>();
+            List<CreateBookingRequest.bookingDetails> bookingdetails = new List<CreateBookingRequest.bookingDetails>();
             decimal dAmount = Convert.ToDecimal(sAmount);
             string sYear = DateTime.Now.Year.ToString();
             string sMonth = DateTime.Now.Month.ToString("d2");
@@ -236,7 +236,7 @@ namespace PSP.Models
             string sDateToday = sYear + sMonth + sDay;
 
             //debit
-            bookingdetailslist.Add(new CreateBookingRequest.bookingDetailsList()
+            bookingdetails.Add(new CreateBookingRequest.bookingDetails()
             {
                 AccountAmount = new CreateBookingRequest.AccountAmount
                 {
@@ -245,7 +245,7 @@ namespace PSP.Models
                 },
                 AccountNumber = new CreateBookingRequest.AccountNumber
                 {
-                    AcntFrmt = 2,
+                    AcntFrmt = 1, // 1=customer, 2=internal accnt
                     AcntNumber = sMotherAccount
                 },
                 BaseCurrencyAmount = new CreateBookingRequest.BaseCurrencyAmount()
@@ -265,7 +265,7 @@ namespace PSP.Models
             });
 
             //credit
-            bookingdetailslist.Add(new CreateBookingRequest.bookingDetailsList()
+            bookingdetails.Add(new CreateBookingRequest.bookingDetails()
             {
                 AccountAmount = new CreateBookingRequest.AccountAmount
                 {
@@ -274,7 +274,7 @@ namespace PSP.Models
                 },
                 AccountNumber = new CreateBookingRequest.AccountNumber
                 {
-                    AcntFrmt = 2,
+                    AcntFrmt = 1, // 1=customer, 2=internal accnt
                     AcntNumber = sChildAccount
                 },
                 BaseCurrencyAmount = new CreateBookingRequest.BaseCurrencyAmount()
@@ -293,7 +293,7 @@ namespace PSP.Models
                 Entity = "GCTBCPH001"
             });
 
-            return bookingdetailslist;
+            return bookingdetails;
         }
 
         public Response StartGeneration(string sFileName)
@@ -301,7 +301,7 @@ namespace PSP.Models
             bool blnReturn = false;
             Response response = new Response();
             List<CreateBookingRequest.bookingMaster> bookingmasterlist = new List<CreateBookingRequest.bookingMaster>();
-            List<CreateBookingRequest.bookingDetailsList> bookingdetailslist = new List<CreateBookingRequest.bookingDetailsList>();
+            List<CreateBookingRequest.bookingDetails> bookingdetails = new List<CreateBookingRequest.bookingDetails>();
             _sFileData = File.ReadAllLines("C:\\Payroll Files\\temp\\decrypted.txt");
             if (!IsValidFile(_sFileData))
             {
@@ -315,7 +315,7 @@ namespace PSP.Models
                 bookingmasterlist = FillMaster();
                 var filePath = GenerateXMLFile(bookingmasterlist);
                 File.Delete("C:\\Payroll Files\\temp\\decrypted.txt");
-                Encryptor.EncryptAesManaged(filePath);
+                Encryptor.EncryptAes(filePath);
                 UploadXML(filePath);
 
                 string sRootFile = "C:\\Payroll Files\\" + sFileName;
@@ -628,7 +628,7 @@ namespace PSP.Models
             var streamWriter = new StreamWriter(file, false);
             var xmlserializer = new XmlSerializer(typeof(CreateBookingRequest));
             var xmlnamespace = new XmlSerializerNamespaces();
-            List<CreateBookingRequest.bookingDetailsList> bookingDetailsList = new List<CreateBookingRequest.bookingDetailsList>();
+            List<CreateBookingRequest.bookingDetails> bookingDetails = new List<CreateBookingRequest.bookingDetails>();
             List<CreateBookingRequest.bookingMaster> bookingMaster = new List<CreateBookingRequest.bookingMaster>();
 
             var CreateBookingRequest = new CreateBookingRequest

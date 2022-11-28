@@ -20,11 +20,6 @@ namespace PSP.Controllers
     {
         public IActionResult Index()
         {
-            if (!User.Identity.IsAuthenticated || string.IsNullOrEmpty(HttpContext.Session.GetString("UserId")))
-            {
-                return (RedirectToAction("Logout", "Login"));
-            }
-
             ViewBag.User = HttpContext.Session.GetString("UserId");
             return View();
         }

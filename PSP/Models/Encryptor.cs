@@ -7,11 +7,12 @@ namespace PSP.Models
 {
     public static class Encryptor
     {
-        public static void EncryptAesManaged(string sRawFile)
+    {
+        public static void EncryptAes(string sRawFile)
         {
-            string password = "5D019DABC2701C5810FD98087A7FD6640B20756B";
+            string password = "5D019DABC2701C5810FD98087A7FD6640B20756B"; //set password
             byte[] salt;
-            salt = Encoding.ASCII.GetBytes(password);
+            salt = Encoding.ASCII.GetBytes(password); //add salt
             string sInputFile = sRawFile;
 
             string sDecryptPath = "C:\\Payroll Files\\EncryptedAES";
@@ -28,10 +29,10 @@ namespace PSP.Models
             byte[] btInputFileData = new byte[Convert.ToInt32(fsInput.Length)];
             fsInput.Read(btInputFileData, 0, Convert.ToInt32(Convert.ToInt32(fsInput.Length)));
 
-            using (AesManaged aes = new AesManaged())
+            using (Aes aes = Aes.Create())
             {
                 aes.KeySize = 256;
-                var key = new Rfc2898DeriveBytes(password, salt);
+                var key = new Rfc2898DeriveBytes(password, salt, 1000, HashAlgorithmName.SHA256); //derive key from pass and salt
                 aes.Key = key.GetBytes(aes.KeySize / 8);
                 aes.IV = key.GetBytes(aes.BlockSize / 8);
                 ICryptoTransform encryptor = aes.CreateEncryptor(aes.Key, aes.IV);
