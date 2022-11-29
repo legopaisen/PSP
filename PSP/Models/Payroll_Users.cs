@@ -66,16 +66,17 @@ namespace PSP.Models
         {
             int iReturn = 0;
             string sQuery = string.Empty;
-            sQuery = "INSERT INTO Payroll_Users (UserName, Name, AccLevel, CreatedOn, ModifiedBy, ModifiedOn, Email) VALUES";
+            sQuery = "INSERT INTO Payroll_Users (UserName, Name, AccLevel, CreatedOn, ModifiedBy, ModifiedOn, Email, Active) VALUES";
             sQuery += $" ('{model.UserName}', ";
             sQuery += $" '{model.Name}', ";
             sQuery += $" '{model.AccLevel}', ";
             sQuery += $" '{model.CreatedOn}', ";
             sQuery += $" '{model.ModifiedBy}', ";
             sQuery += $" '{model.ModifiedOn}', ";
-            sQuery += $" '{model.Email}')";
+            sQuery += $" '{model.Email}', ";
+            sQuery += $" '1')";
 
-            using(SqlConnection con = new SqlConnection(SqlHelper.GetConnection().ConnectionString.ToString()))
+            using (SqlConnection con = new SqlConnection(SqlHelper.GetConnection().ConnectionString.ToString()))
             {
                 using(SqlCommand cmd = con.CreateCommand())
                 {

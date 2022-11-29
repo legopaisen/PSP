@@ -7,7 +7,6 @@ namespace PSP.Models
 {
     public static class Encryptor
     {
-    {
         public static void EncryptAes(string sRawFile)
         {
             string password = "5D019DABC2701C5810FD98087A7FD6640B20756B"; //set password

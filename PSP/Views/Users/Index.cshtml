@@ -14,7 +14,6 @@
             method: 'GET',
             contentType: 'application/json',
             success: function (data) {
-                console.log(data);
                 $("#UsersList").bootstrapTable('load', { data: data });
             },
             error: function (err) {
@@ -26,15 +25,16 @@
                 var model = {
                    UserName: row.UserName
                 }
-                swal({
+                Swal.fire({
                     title: "Deactivate User?",
                     text: "User will be deactivated",
                     icon: "warning",
-                    buttons: true,
-                    dangerMode: true,
+                    showConfirmButton: true,
+                    showCancelButton: true,
+                    dangerMode: true
                 })
-                .then((confirm) => {
-                    if (confirm) {
+                .then((result) => {
+                        if (result.isConfirmed) {
                         $.ajax({
                             cache: false,
                             data: JSON.stringify(model),
@@ -43,7 +43,7 @@
                             url: "@Url.Action("ActivateUser", "Users")",
                             datatype: "json",
                             success: function (data) {
-                                swal("Success", data.Description, "success")
+                                Swal.fire("Success", data.Description, "success")
                                     .then((value) => {
                                         if (data.ResponseStat == 2) {
                                             window.location = "@Url.Action("Logout", "Login")";
@@ -105,18 +105,19 @@
                         },
                         success: function (data) {
                             if (data[0] != undefined) {
-                                swal("Error", "User Already Exists!", "error");
+                                Swal.fire("Error", "User Already Exists!", "error");
                             }
                             else {
-                                swal({
+                                Swal.fire({
                                     title: "Add New User",
                                     text: "Create new user?",
                                     icon: "warning",
-                                    buttons: true,
+                                    showConfirmButton: true,
+                                    showCancelButton: true,
                                     dangerMode: true,
                                 })
-                                    .then((confirm) => {
-                                        if (confirm) {
+                                    .then((result) => {
+                                        if (result.isConfirmed) {
                                             $.ajax({
                                                 cache: false,
                                                 data: JSON.stringify(model),
@@ -126,10 +127,10 @@
                                                 datatype: "json",
                                                 success: function (data) {
                                                     if (data.ResponseStat != 1 && data != null) {
-                                                        swal("Error", data.Description, "error");
+                                                        Swal.fire("Error", data.Description, "error");
                                                     }
                                                     else {
-                                                        swal("Success", data.Description, "success")
+                                                        Swal.fire("Success", data.Description, "success")
                                                             .then((value) => {
                                                                 location.reload();
                                                             });
@@ -166,7 +167,7 @@
                         url: "@Url.Action("EditUser", "Users")",
                         datatype: "json",
                         success: function (data) {
-                            swal("Success", data.Description, "success")
+                            Swal.fire("Success", data.Description, "success")
                                 .then((value) => {
                                     location.reload();
                                 });
@@ -220,7 +221,7 @@
                         $("#modal-email").val(data.EmailAddress);
                     }
                     else {
-                        swal("Oops!", "Invalid Network ID", "error");
+                        Swal.fire("Oops!", "Invalid Network ID", "error");
                     }
                 },
                 error: function(response) {
