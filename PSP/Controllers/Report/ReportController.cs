@@ -1,9 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Rotativa.AspNetCore;
 using PSP.Models;
 using Microsoft.AspNetCore.Http;
@@ -33,7 +29,7 @@ namespace PSP.Controllers.Reports
         public IActionResult DownloadViewPDF()
         {
             var model = new AuditTrailModel();
-            return new Rotativa.AspNetCore.ViewAsPdf("AuditTrail");
+            return new ViewAsPdf("AuditTrail");
 
         }
     }

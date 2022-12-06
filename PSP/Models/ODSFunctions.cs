@@ -1,12 +1,8 @@
-﻿using Oracle.ManagedDataAccess.Client;
-using Renci.SshNet;
+﻿using Renci.SshNet;
 using System;
 using System.Collections.Generic;
-using System.Data.OracleClient;
 using System.Data.SqlClient;
 using System.IO;
-using System.Linq;
-using System.Web;
 using System.Xml.Serialization;
 namespace PSP.Models
 {

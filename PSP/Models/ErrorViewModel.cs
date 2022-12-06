@@ -1,5 +1,3 @@
-using System;
-
 namespace PSP.Models
 {
     public class ErrorViewModel

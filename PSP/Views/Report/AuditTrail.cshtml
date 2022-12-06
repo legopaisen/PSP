@@ -11,7 +11,6 @@
             contentType: 'application/json',
             success: function (data) {
                 $("#AuditTrailList").bootstrapTable('load', { data: data });
-                console.log(data);
             },
             error: function (err) {
                 console.log(err);
@@ -21,7 +20,7 @@
 </script>
 <div class="container mt-3 flex-shrink-1">
     <h2>Report - Audit Trail</h2>
-    <a href="@Url.Action("DownloadViewPDF", "Report")" class="btn btn-primary"></a>
+    <a href="@Url.Action("DownloadViewPDF", "Report")" class="btn btn-primary">Print</a>
     <table id="AuditTrailList" class="table table-striped"
            data-toggle="table"
            data-classes="table table-hover table-bordered"

@@ -1,15 +1,12 @@
 ﻿using CTBC.Network;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.OutputCaching;
 using PSP.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
-using System.Threading.Tasks;
 
 namespace PSP.Controllers
 {
@@ -58,32 +55,6 @@ namespace PSP.Controllers
                 //string strPassword = new SystemCore().DecryptStringAES(Request.Form["hdnPasswordEncrypted"].ToString(), Request.Form["HashCode"].ToString());
                 string strNetworkID = userid;
                 string strPassword = pwd;
-
-                // developer login bypass
-                if (userid == "g")
-                {
-                    var claims = new List<Claim>
-                                {
-                                new Claim(ClaimTypes.Name, "claim")
-                                };
-
-                    if (User.Identity.IsAuthenticated)
-                    {
-                        return RedirectToAction("Index", "Home");
-                    }
-                    var claimIdentity = new ClaimsIdentity(claims, userid);
-                    var ClaimsPrincipal = new ClaimsPrincipal(claimIdentity);
-                    var authenticationProperty = new AuthenticationProperties
-                    {
-                        IsPersistent = false
-                    };
-                    HttpContext.SignInAsync(ClaimsPrincipal, authenticationProperty);
-
-                    HttpContext.Session.SetString("UserId", userid);
-
-                    return RedirectToAction("Index", "Login");
-                }
-                
 
                 CTBC.Cryptography.AES crypto = new CTBC.Cryptography.AES(SystemCore.SecurityKey);
 
