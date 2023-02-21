@@ -13,6 +13,7 @@ namespace PSP.Models
 {
     public static class Decryptor
     {
+        //decryption is based on existing psp checker files from branches
         public static void Decrypt(string sFilePath)
         {
             byte[] btKey;
@@ -57,4 +58,6 @@ namespace PSP.Models
         }
 
     }
+
+    
 }

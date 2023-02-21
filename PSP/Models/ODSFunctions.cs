@@ -1,8 +1,18 @@
-﻿using Renci.SshNet;
+﻿using CTBC;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using Newtonsoft.Json;
+using Renci.SshNet;
 using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.IO;
+using System.Linq;
+using System.Net.Http;
+using System.Net.Http.Formatting;
+using System.Reflection;
+using System.Security.Principal;
+using System.Text;
 using System.Xml.Serialization;
 namespace PSP.Models
 {
@@ -46,11 +56,20 @@ namespace PSP.Models
                 public string BusinessTransactionDetail1 { get; set; }
                 public string BusinessTransactionDetail2 { get; set; }
                 public string CashBlockID { get; set; }
-                //public int CustomerExchangeRate { get; set; }
-                public int CashIndicator { get; set; }
+                public int CustomerExchangeRate { get; set; }
+                public string CashIndicator { get; set; }
                 public string ReconciliationReferenceID { get; set; }
                 public string NarrativeID { get; set; }
-                //public NarrativePlaceholders NarrativePlaceholders { get; set; }
+                NarrativePlaceholders? _narrativePlaceholders;
+                public NarrativePlaceholders NarrativePlaceholders
+                {
+                    get { return (NarrativePlaceholders)_narrativePlaceholders; }
+                    set { _narrativePlaceholders = value; }
+                }
+                public bool NarrativePlaceholdersSpecified
+                {
+                    get { return _narrativePlaceholders != null; }
+                }
                 public string BtcCode { get; set; }
                 public string EpcCode { get; set; }
                 public TransactionAmount TransactionAmount { get; set; }
@@ -193,12 +212,13 @@ namespace PSP.Models
             sFileData = _sFileData[0];
             string sMotherAccount = sFileData.Substring(38, 12).Trim();
 
-            for (int i=1; i < iFileCount - 1; i++)
+            for (int i = 1; i < iFileCount - 1; i++)
             {
                 sFileData = _sFileData[i];
                 string sChildAccount = sFileData.Substring(18, 12).Trim();
                 string sAmount = sFileData.Substring(30, 13).Trim();
-                decimal decAmount = Convert.ToDecimal(sAmount);
+                string sAmountFormat= Convert.ToDecimal(sAmount).ToString();
+                decimal decAmount = Convert.ToDecimal(sAmountFormat.Substring(0, sAmountFormat.Length -2) + "." + sAmountFormat.Substring(sAmountFormat.Length -2));
                 sBookingID = GetBookingID(iCntBookingID);
                 bookingMasterlist.Add(new CreateBookingRequest.bookingMaster()
                 {
@@ -241,8 +261,8 @@ namespace PSP.Models
                 },
                 AccountNumber = new CreateBookingRequest.AccountNumber
                 {
-                    AcntFrmt = 1, // 1=customer, 2=internal accnt
-                    AcntNumber = sMotherAccount
+                    AcntFrmt = 2, // 1=customer, 2=internal accnt
+                    AcntNumber = "001010000161" // sample gl codes - 660187, 001010000158
                 },
                 BaseCurrencyAmount = new CreateBookingRequest.BaseCurrencyAmount()
                 {
@@ -250,7 +270,8 @@ namespace PSP.Models
                     Crncy = "PHP"
                 },
                 BookingType = 2,
-                CashIndicator = 2,
+                CustomerExchangeRate = 1,
+                CashIndicator = "NO",
                 TransactionAmount = new CreateBookingRequest.TransactionAmount()
                 {
                     Amount = dAmount,
@@ -279,7 +300,15 @@ namespace PSP.Models
                     Crncy = "PHP"
                 },
                 BookingType = 1,
-                CashIndicator = 2,
+                CashIndicator = "NO",
+                NarrativeID = "20577",
+                NarrativePlaceholders = new CreateBookingRequest.NarrativePlaceholders()
+                {
+                    PLHName = "REMITTANCEINFORMATION_LINE1",
+                    PLHValue = "ABC"
+                },
+                BtcCode = "125",
+                EpcCode = "8011",
                 TransactionAmount = new CreateBookingRequest.TransactionAmount()
                 {
                     Amount = dAmount,
@@ -305,26 +334,42 @@ namespace PSP.Models
                 response.Description = "There are errors found in the file. Check Logs file.";
                 return response;
             }
-
             try
             {
                 bookingmasterlist = FillMaster();
-                var filePath = GenerateXMLFile(bookingmasterlist);
-                File.Delete("C:\\Payroll Files\\temp\\decrypted.txt");
-                Encryptor.EncryptAes(filePath);
-                UploadXML(filePath);
-
-                string sRootFile = "C:\\Payroll Files\\" + sFileName;
-                string sDestination = "C:\\Payroll Files\\Archive\\";
-                if (!Directory.Exists(sDestination))
+                var GLResponse = DoBookingGL(bookingmasterlist);
+                dynamic GLResponseAPI = null;
+                if(GLResponse.StatusCode == System.Net.HttpStatusCode.OK)
                 {
-                    _ = Directory.CreateDirectory(sDestination);
+                    GLResponseAPI = JsonConvert.DeserializeObject(GLResponse.Content);
+                    if (GLResponseAPI.bookingResponseDetails.bookingSuccessful.ToString().Equals("1"))
+                    {
+                        var filePath = GenerateXMLFile(bookingmasterlist);
+                        string sOutput = "C:\\Payroll Files\\EncryptedAES\\encrypted.txt";
+                        File.Delete("C:\\Payroll Files\\temp\\decrypted.txt");
+                        string sContent = File.ReadAllText(filePath);
+                        byte[] encryptedContent = AES_Encryption.AES.Encrypt(sContent, "5D019DABC2701C5810FD98087A7FD6640B20756B");
+                        using (FileStream filestream = new FileStream(sOutput, FileMode.Create, FileAccess.Write))
+                        {
+                            filestream.Write(encryptedContent, 0, encryptedContent.Length);
+                        }
+                        string s = AES_Encryption.AES.Decrypt(encryptedContent, "5D019DABC2701C5810FD98087A7FD6640B20756B"); //decrypt check debug
+                                                                                                                             //Encryptor.EncryptAes(filePath);
+                        UploadXML(filePath);
+
+                        string sRootFile = "C:\\Payroll Files\\" + sFileName;
+                        string sDestination = "C:\\Payroll Files\\Archive\\";
+                        if (!Directory.Exists(sDestination))
+                        {
+                            _ = Directory.CreateDirectory(sDestination);
+                        }
+                        GC.Collect();
+                        File.Move(sRootFile, sDestination + sFileName);
+                        GC.Collect();
+                        response.ResponseStat = 2;
+                        response.Description = "File processed successfully!\r\n" + _sFileMessage;
+                    }
                 }
-                GC.Collect();
-                File.Move(sRootFile, sDestination + sFileName);
-                GC.Collect();
-                response.ResponseStat = 2;
-                response.Description = "File processed successfully!\r\n" + _sFileMessage;
             }
             catch (Exception ex)
             {
@@ -673,5 +718,128 @@ namespace PSP.Models
             }
         }
 
+        [HttpPost]
+        public dynamic DoBookingGL(List<CreateBookingRequest.bookingMaster> bookingMasterlist)
+        {
+            int iCntBookingID = GetNewBookingSeries();
+            string sBookingID = GetBookingID(iCntBookingID);
+            var input = new Dictionary<string, object>();
+
+            decimal decTransactionAmount = decimal.Parse(bookingMasterlist.Sum(x => decimal.Parse(x.BookingDetails[0].TransactionAmount.Amount.ToString())).ToString());
+            string sMotherAccount = bookingMasterlist.Select(x => x.BookingDetails[0].AccountNumber.AcntNumber).FirstOrDefault().ToString();
+            var BookingMasterModel = new bookingMaster
+            {
+                entity = "GCTBCPH001",
+                transactionDate = DateTime.Now.ToString("yyyyMMdd"),
+                externalBusinessEventId = 0,
+                forcedBookingIndicator = 0,
+                orderingSystemId = 0,
+                bookingRequestId = sBookingID,
+                transactionId = sBookingID,
+                transactionSource = "CMMC",
+                reversalCorrectionIndicator = 0,
+                externalTransactionReference = ""
+            };
+
+
+            List<bookingDetails> bookingDetailsList = new List<bookingDetails>();
+           
+            //DEBIT
+            bookingDetailsList.Add(new bookingDetails
+            {
+                entity = "GCTBCPH001",
+                accountCurrency = "PHP",//pModel.AccountFromCurrency.ToString(),//"CHF",
+                accountAmount = double.Parse(decTransactionAmount.ToString()), //70.00,
+                accountNumberFormat = 1,
+                accountNumber = sMotherAccount,//"101330100131324",
+                bookingType = 2,
+                cashBlockId = "",
+                orginialValueDate = DateTime.Now.ToString("yyyyMMdd"),//Convert.ToDateTime(pModel.DueDate).ToString("yyyyMMdd"),//"20500101", 
+                customerExchangeRate = 1,
+                valueDate = DateTime.Now.ToString("yyyyMMdd"),//Convert.ToDateTime(pModel.DueDate).ToString("yyyyMMdd"), //"20211220",
+                narrativeId = "9999",
+                accountingDate = DateTime.Now.ToString("yyyyMMdd"),//Convert.ToDateTime(pModel.DueDate).ToString("yyyyMMdd"),//"20211220",
+                baseCurrencyAmount = double.Parse(decTransactionAmount.ToString()),//70.00,
+                transactionAmount = double.Parse(decTransactionAmount.ToString()),//70.00,
+                transactionCurrency = "PHP",//"CHF",
+                cashIndicator = 0,
+                narrativePlaceholders = "",
+                btcCode = "125",
+                epcCode = "8011",
+                businessTransactionDetail1 = "MigratedAcccountBooking",
+                businessTransactionDetail2 = "",
+                reconciliationReferenceId = "",
+                grossBookingRequired = 1,
+                componentType = 0,
+                virtualAccountNumber = "",
+                taxCode = "1",
+                bookId = 1,
+                counterBookId = 0,
+            });
+
+            //CREDIT
+            bookingDetailsList.Add(new bookingDetails
+            {
+                entity = "GCTBCPH001",
+                accountCurrency = "PHP",//pModel.AccountFromCurrency.ToString(),//"CHF",
+                accountAmount = double.Parse(decTransactionAmount.ToString()), //70.00,
+                accountNumberFormat = 2,
+                accountNumber = "001010000161",//GLAccount
+                bookingType = 1,
+                cashBlockId = "",
+                orginialValueDate = DateTime.Now.ToString("yyyyMMdd"),//Convert.ToDateTime(pModel.DueDate).ToString("yyyyMMdd"),//"20500101", 
+                customerExchangeRate = 1,
+                valueDate = DateTime.Now.ToString("yyyyMMdd"),//Convert.ToDateTime(pModel.DueDate).ToString("yyyyMMdd"), //"20211220",
+                narrativeId = "9999",
+                accountingDate = DateTime.Now.ToString("yyyyMMdd"),//Convert.ToDateTime(pModel.DueDate).ToString("yyyyMMdd"),//"20211220",
+                baseCurrencyAmount = double.Parse(decTransactionAmount.ToString()),//70.00,
+                transactionAmount = double.Parse(decTransactionAmount.ToString()),//70.00,
+                transactionCurrency = "PHP",//"CHF",
+                cashIndicator = 0,
+                narrativePlaceholders = "",
+                btcCode = "125",
+                epcCode = "8011",
+                businessTransactionDetail1 = "MigratedAcccountBooking",
+                businessTransactionDetail2 = "",
+                reconciliationReferenceId = "",
+                grossBookingRequired = 1,
+                componentType = 0,
+                virtualAccountNumber = "",
+                taxCode = "1",
+                bookId = 1,
+                counterBookId = 0
+            });
+            input.Add("bookingMaster", BookingMasterModel);
+            input.Add("bookingDetailsList", bookingDetailsList);
+
+            var JsonContent = JsonConvert.SerializeObject(input);
+            var content = new StringContent(JsonContent.ToString(), Encoding.UTF8, "application/json");
+
+            string BaseURL = "http://fepaprib02:6967";
+            var request = new HttpRequestMessage()
+            {
+                RequestUri = new Uri(BaseURL + "/api/common/CreateBooking"),
+                Method = HttpMethod.Post,
+                Content = content
+            };
+            request.Headers.Add("APIKey", "uSFKLwORiyBIFHjPxLnCww==");
+            request.Headers.Add("SecretKey", "LDHgpd8u8VnmiBjO6An/DA==");
+            request.Headers.Add("userid", "ESB");
+            request.Headers.Add("servicecode", "IPY");
+            dynamic response = null;
+            try
+            {
+                using (var client = new HttpClient())
+                {
+                    client.BaseAddress = new Uri(BaseURL);
+                    response = client.SendAsync(request);
+                }
+            }
+            catch
+            {
+
+            }
+            return response;
+        }
     }
 }

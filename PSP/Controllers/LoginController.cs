@@ -79,7 +79,7 @@ namespace PSP.Controllers
                             {
                                 var claims = new List<Claim>
                                 {
-                                new Claim(ClaimTypes.Name, "claim")
+                                new Claim(ClaimTypes.Name, "userid")
                                 };
 
                                 if (User.Identity.IsAuthenticated)
